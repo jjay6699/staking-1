@@ -250,7 +250,7 @@ function App() {
         <BarChart3 size={23} />
         <span>Trade</span>
       </button>
-      <button className="swap-button" type="button" aria-label="Open transfer" onClick={() => goTo(view === 'wallet' ? 'transfer' : 'dashboard')}>
+      <button className="swap-button" type="button" aria-label="Open transfer" onClick={() => goTo('transfer')}>
         <ArrowUpRight size={31} />
       </button>
       <button className={view === 'dashboard' || view === 'details' ? 'active' : ''} type="button" onClick={() => goTo('dashboard')}>
