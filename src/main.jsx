@@ -151,6 +151,7 @@ function App() {
   const [expandedTicker, setExpandedTicker] = useState('');
   const [view, setView] = useState('dashboard');
   const [walletFilter, setWalletFilter] = useState('assets');
+  const [walletSlideIndex, setWalletSlideIndex] = useState(0);
   const [transferMode, setTransferMode] = useState('send');
   const [selectedTransferTicker, setSelectedTransferTicker] = useState('BTC');
   const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
@@ -220,7 +221,7 @@ function App() {
   const isLocked = remainingLockMs > 0;
   const unlockDate = formatUnlockDate(unlockTimestamp);
   const remainingLockTime = formatRemainingTime(remainingLockMs);
-  const walletUsdValue = btcPrice ? staking.btcBalance * btcPrice : null;
+  const selectedWalletAsset = walletAssets[walletSlideIndex] ?? walletAssets[0];
 
   function goTo(nextView) {
     setExpandedTicker('');
@@ -474,28 +475,77 @@ function App() {
             </a>
           </header>
 
-          <section className="wallet-balance-card">
-            <div className="wallet-balance-top">
-              <span className="asset-icon wallet-btc-icon">
-                <img src={btcIcon} alt="Bitcoin logo" />
-              </span>
-              <span className="pill locked">
-                <LockKeyhole size={13} />
-                Locked
-              </span>
+          <section className="wallet-carousel-card">
+            <div className="wallet-slides" style={{ transform: `translateX(-${walletSlideIndex * 100}%)` }}>
+              {walletAssets.map((asset) => {
+                const slideUsdValue = asset.ticker === 'BTC' && btcPrice ? asset.balance * btcPrice : 0;
+
+                return (
+                  <article className="wallet-balance-card wallet-slide" key={asset.ticker}>
+                    <div className="wallet-balance-top">
+                      <span className="asset-icon wallet-btc-icon">
+                        <img src={asset.icon} alt={`${asset.name} logo`} />
+                      </span>
+                      {asset.locked && (
+                        <span className="pill locked">
+                          <LockKeyhole size={13} />
+                          Locked
+                        </span>
+                      )}
+                    </div>
+                    <p>Total {asset.ticker} Balance</p>
+                    <div className="wallet-btc-balance">
+                      {asset.ticker === 'BTC' ? formatBtc(asset.balance) : asset.balance.toFixed(5)} {asset.ticker}
+                    </div>
+                    <div className="wallet-usd-balance">
+                      {asset.ticker === 'BTC' && !btcPrice ? 'Loading live USD value...' : formatUsd(slideUsdValue)}
+                    </div>
+                    <div className="wallet-price-row">
+                      <span>{asset.ticker}/USD</span>
+                      <strong>{asset.ticker === 'BTC' ? btcPrice ? formatUsd(btcPrice) : 'Loading' : formatUsd(0)}</strong>
+                    </div>
+                    {asset.locked ? (
+                      <button className="wallet-withdraw-button" type="button" onClick={handleWithdraw}>
+                        Withdraw
+                      </button>
+                    ) : (
+                      <button className="wallet-withdraw-button secondary" type="button" onClick={() => goTo('transfer')}>
+                        Transfer
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
             </div>
-            <p>Total BTC Balance</p>
-            <div className="wallet-btc-balance">{formatBtc(staking.btcBalance)} BTC</div>
-            <div className="wallet-usd-balance">
-              {walletUsdValue ? formatUsd(walletUsdValue) : 'Loading live USD value...'}
+
+            <div className="wallet-carousel-controls">
+              <button
+                type="button"
+                aria-label="Previous asset"
+                onClick={() => setWalletSlideIndex((index) => (index === 0 ? walletAssets.length - 1 : index - 1))}
+              >
+                ‹
+              </button>
+              <div className="wallet-dots" aria-label={`${selectedWalletAsset.name} selected`}>
+                {walletAssets.map((asset, index) => (
+                  <button
+                    className={index === walletSlideIndex ? 'active' : ''}
+                    type="button"
+                    aria-label={`Show ${asset.name}`}
+                    key={asset.ticker}
+                    onClick={() => setWalletSlideIndex(index)}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                aria-label="Next asset"
+                onClick={() => setWalletSlideIndex((index) => (index + 1) % walletAssets.length)}
+              >
+                ›
+              </button>
             </div>
-            <div className="wallet-price-row">
-              <span>BTC/USD</span>
-              <strong>{btcPrice ? formatUsd(btcPrice) : 'Loading'}</strong>
-            </div>
-            <button className="wallet-withdraw-button" type="button" onClick={handleWithdraw}>
-              Withdraw
-            </button>
+
             {priceError && <div className="wallet-error">{priceError}</div>}
           </section>
 

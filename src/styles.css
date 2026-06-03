@@ -792,8 +792,7 @@ button {
   height: 18px;
 }
 
-.wallet-balance-card,
-.wallet-status-card,
+.wallet-carousel-card,
 .wallet-actions {
   position: relative;
   z-index: 1;
@@ -802,9 +801,19 @@ button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
-.wallet-balance-card {
-  padding: 17px;
+.wallet-carousel-card {
+  overflow: hidden;
   margin-bottom: 10px;
+}
+
+.wallet-slides {
+  display: flex;
+  transition: transform 240ms ease;
+}
+
+.wallet-balance-card {
+  min-width: 100%;
+  padding: 17px 17px 12px;
 }
 
 .wallet-balance-top,
@@ -895,8 +904,60 @@ button {
   cursor: pointer;
 }
 
+.wallet-withdraw-button.secondary {
+  color: #f7f7f8;
+  background: #17181e;
+}
+
+.wallet-carousel-controls {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 17px 14px;
+}
+
+.wallet-carousel-controls > button {
+  width: 36px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #f7f7f8;
+  background: #17181e;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wallet-carousel-controls > button:last-child {
+  justify-self: end;
+}
+
+.wallet-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.wallet-dots button {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border-radius: 50%;
+  background: #3b3d48;
+  cursor: pointer;
+}
+
+.wallet-dots button.active {
+  width: 18px;
+  border-radius: 999px;
+  background: #f1d40a;
+}
+
 .wallet-error {
-  margin-top: 10px;
+  margin: 0 17px 14px;
   color: #ff8d8d;
 }
 
