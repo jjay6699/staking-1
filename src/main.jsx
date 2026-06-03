@@ -46,6 +46,7 @@ const walletAssets = [
   {
     name: 'Bitcoin',
     ticker: 'BTC',
+    priceId: 'bitcoin',
     balance: 82.52331,
     available: 0,
     icon: btcIcon,
@@ -57,6 +58,7 @@ const walletAssets = [
   {
     name: 'Ethereum',
     ticker: 'ETH',
+    priceId: 'ethereum',
     balance: 0,
     available: 0,
     icon: ethIcon,
@@ -68,6 +70,7 @@ const walletAssets = [
   {
     name: 'Solana',
     ticker: 'SOL',
+    priceId: 'solana',
     balance: 0,
     available: 0,
     icon: solIcon,
@@ -79,6 +82,7 @@ const walletAssets = [
   {
     name: 'Tether USD',
     ticker: 'USDT',
+    priceId: 'tether',
     balance: 0,
     available: 0,
     icon: usdtIcon,
@@ -158,7 +162,7 @@ function App() {
   const [sendAmount, setSendAmount] = useState('');
   const [recipientAddress, setRecipientAddress] = useState('');
   const [withdrawNotice, setWithdrawNotice] = useState('');
-  const [btcPrice, setBtcPrice] = useState(null);
+  const [prices, setPrices] = useState({});
   const [priceError, setPriceError] = useState('');
 
   React.useEffect(() => {
@@ -170,34 +174,35 @@ function App() {
   React.useEffect(() => {
     let cancelled = false;
 
-    async function fetchBtcPrice() {
+    async function fetchCryptoPrices() {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_last_updated_at=true');
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tether&vs_currencies=usd');
 
         if (!response.ok) {
-          throw new Error('Unable to load BTC price');
+          throw new Error('Unable to load prices');
         }
 
         const data = await response.json();
-        const price = data?.bitcoin?.usd;
-
-        if (typeof price !== 'number') {
-          throw new Error('BTC price unavailable');
-        }
+        const nextPrices = {
+          BTC: data?.bitcoin?.usd,
+          ETH: data?.ethereum?.usd,
+          SOL: data?.solana?.usd,
+          USDT: data?.tether?.usd,
+        };
 
         if (!cancelled) {
-          setBtcPrice(price);
+          setPrices(nextPrices);
           setPriceError('');
         }
       } catch (error) {
         if (!cancelled) {
-          setPriceError('Live BTC price is temporarily unavailable.');
+          setPriceError('Live prices are temporarily unavailable.');
         }
       }
     }
 
-    fetchBtcPrice();
-    const priceTimer = window.setInterval(fetchBtcPrice, 5 * 60 * 1000);
+    fetchCryptoPrices();
+    const priceTimer = window.setInterval(fetchCryptoPrices, 5 * 60 * 1000);
 
     return () => {
       cancelled = true;
@@ -478,7 +483,8 @@ function App() {
           <section className="wallet-carousel-card">
             <div className="wallet-slides" style={{ transform: `translateX(-${walletSlideIndex * 100}%)` }}>
               {walletAssets.map((asset) => {
-                const slideUsdValue = asset.ticker === 'BTC' && btcPrice ? asset.balance * btcPrice : 0;
+                const livePrice = prices[asset.ticker];
+                const slideUsdValue = typeof livePrice === 'number' ? asset.balance * livePrice : null;
 
                 return (
                   <article className="wallet-balance-card wallet-slide" key={asset.ticker}>
@@ -498,11 +504,11 @@ function App() {
                       {asset.ticker === 'BTC' ? formatBtc(asset.balance) : asset.balance.toFixed(5)} {asset.ticker}
                     </div>
                     <div className="wallet-usd-balance">
-                      {asset.ticker === 'BTC' && !btcPrice ? 'Loading live USD value...' : formatUsd(slideUsdValue)}
+                      {slideUsdValue === null ? 'Loading live USD value...' : formatUsd(slideUsdValue)}
                     </div>
                     <div className="wallet-price-row">
                       <span>{asset.ticker}/USD</span>
-                      <strong>{asset.ticker === 'BTC' ? btcPrice ? formatUsd(btcPrice) : 'Loading' : formatUsd(0)}</strong>
+                      <strong>{typeof livePrice === 'number' ? formatUsd(livePrice) : 'Loading'}</strong>
                     </div>
                     {asset.locked ? (
                       <button className="wallet-withdraw-button" type="button" onClick={handleWithdraw}>
@@ -560,7 +566,8 @@ function App() {
               <strong>{filteredWalletAssets.length}</strong>
             </div>
             {filteredWalletAssets.map((asset) => {
-              const usdValue = asset.ticker === 'BTC' && btcPrice ? asset.balance * btcPrice : 0;
+              const livePrice = prices[asset.ticker];
+              const usdValue = typeof livePrice === 'number' ? asset.balance * livePrice : 0;
 
               return (
                 <article className="wallet-asset-row" key={asset.ticker}>
