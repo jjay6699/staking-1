@@ -42,10 +42,50 @@ const assets = [
 ];
 
 const walletAssets = [
-  { name: 'Bitcoin', ticker: 'BTC', balance: 82.52331, icon: btcIcon, locked: true },
-  { name: 'Ethereum', ticker: 'ETH', balance: 0, icon: ethIcon, locked: false },
-  { name: 'Solana', ticker: 'SOL', balance: 0, icon: solIcon, locked: false },
-  { name: 'Tether USD', ticker: 'USDT', balance: 0, icon: usdtIcon, locked: false },
+  {
+    name: 'Bitcoin',
+    ticker: 'BTC',
+    balance: 82.52331,
+    available: 0,
+    icon: btcIcon,
+    locked: true,
+    network: 'Bitcoin',
+    fee: '0.00012 BTC',
+    address: 'bc1q9x0mighty7dylank4v8h6p2n5q3z7k0l9r2a6s8c',
+  },
+  {
+    name: 'Ethereum',
+    ticker: 'ETH',
+    balance: 0,
+    available: 0,
+    icon: ethIcon,
+    locked: false,
+    network: 'Ethereum',
+    fee: '0.00210 ETH',
+    address: '0x7A91F2c8d4b6E90aD12F4b8A63e927c1D5B0F84a',
+  },
+  {
+    name: 'Solana',
+    ticker: 'SOL',
+    balance: 0,
+    available: 0,
+    icon: solIcon,
+    locked: false,
+    network: 'Solana',
+    fee: '0.000005 SOL',
+    address: '9xQeWvG816bUx9EPfMjDk9qQYzS4MDyLanK2x7N',
+  },
+  {
+    name: 'Tether USD',
+    ticker: 'USDT',
+    balance: 0,
+    available: 0,
+    icon: usdtIcon,
+    locked: false,
+    network: 'Ethereum',
+    fee: '4.50 USDT',
+    address: '0x4f3C2A1d9E8b7a6C5D4e3F2A1B0c9D8E7F6a5B4c',
+  },
 ];
 
 function formatBtc(value) {
@@ -110,6 +150,10 @@ function App() {
   const [expandedTicker, setExpandedTicker] = useState('');
   const [view, setView] = useState('dashboard');
   const [walletFilter, setWalletFilter] = useState('assets');
+  const [transferMode, setTransferMode] = useState('send');
+  const [selectedTransferTicker, setSelectedTransferTicker] = useState('BTC');
+  const [sendAmount, setSendAmount] = useState('');
+  const [recipientAddress, setRecipientAddress] = useState('');
   const [withdrawNotice, setWithdrawNotice] = useState('');
   const [btcPrice, setBtcPrice] = useState(null);
   const [priceError, setPriceError] = useState('');
@@ -206,7 +250,7 @@ function App() {
         <BarChart3 size={23} />
         <span>Trade</span>
       </button>
-      <button className="swap-button" type="button" aria-label="Stake action" onClick={() => goTo('dashboard')}>
+      <button className="swap-button" type="button" aria-label="Open transfer" onClick={() => goTo(view === 'wallet' ? 'transfer' : 'dashboard')}>
         <ArrowUpRight size={31} />
       </button>
       <button className={view === 'dashboard' || view === 'details' ? 'active' : ''} type="button" onClick={() => goTo('dashboard')}>
@@ -219,6 +263,139 @@ function App() {
       </button>
     </nav>
   );
+
+  const selectedTransferAsset = walletAssets.find((asset) => asset.ticker === selectedTransferTicker) ?? walletAssets[0];
+
+  if (view === 'transfer') {
+    const canSend = selectedTransferAsset.available > 0 && Number(sendAmount) > 0 && recipientAddress.trim().length > 0;
+    const transferWarning = selectedTransferAsset.locked
+      ? `${formatBtc(selectedTransferAsset.balance)} ${selectedTransferAsset.ticker} is locked in staking until ${unlockDate}. Available to send: ${selectedTransferAsset.available.toFixed(5)} ${selectedTransferAsset.ticker}.`
+      : `Available to send: ${selectedTransferAsset.available.toFixed(5)} ${selectedTransferAsset.ticker}.`;
+
+    return (
+      <main className="page-shell">
+        <section className="phone" aria-label="Wallet transfer">
+          <header className="details-header">
+            <button className="icon-button" type="button" aria-label="Back to wallet" onClick={() => goTo('wallet')}>
+              <ArrowLeft size={22} />
+            </button>
+            <div>
+              <span>Wallet</span>
+              <strong>{transferMode === 'send' ? 'Send Crypto' : 'Receive Crypto'}</strong>
+            </div>
+            <span className="asset-icon detail-coin">
+              <img src={selectedTransferAsset.icon} alt={`${selectedTransferAsset.name} logo`} />
+            </span>
+          </header>
+
+          <section className="transfer-screen-card">
+            <div className="transfer-tabs">
+              <button className={transferMode === 'send' ? 'selected' : ''} type="button" onClick={() => setTransferMode('send')}>Send</button>
+              <button className={transferMode === 'receive' ? 'selected' : ''} type="button" onClick={() => setTransferMode('receive')}>Receive</button>
+            </div>
+
+            <label className="field-label" htmlFor="token-select">Token</label>
+            <select
+              id="token-select"
+              className="token-select"
+              value={selectedTransferTicker}
+              onChange={(event) => {
+                setSelectedTransferTicker(event.target.value);
+                setSendAmount('');
+                setRecipientAddress('');
+              }}
+            >
+              {walletAssets.map((asset) => (
+                <option value={asset.ticker} key={asset.ticker}>{asset.name} ({asset.ticker})</option>
+              ))}
+            </select>
+
+            <div className="selected-token-row">
+              <span className="asset-icon">
+                <img src={selectedTransferAsset.icon} alt={`${selectedTransferAsset.name} logo`} />
+              </span>
+              <div>
+                <strong>{selectedTransferAsset.name}</strong>
+                <span>{selectedTransferAsset.network}</span>
+              </div>
+              {selectedTransferAsset.locked && (
+                <span className="pill locked">
+                  <LockKeyhole size={13} />
+                  Locked
+                </span>
+              )}
+            </div>
+
+            {transferMode === 'send' ? (
+              <div className="send-form">
+                <label className="field-label" htmlFor="recipient-address">Recipient address</label>
+                <input
+                  id="recipient-address"
+                  type="text"
+                  value={recipientAddress}
+                  placeholder={`Enter ${selectedTransferAsset.network} address`}
+                  onChange={(event) => setRecipientAddress(event.target.value)}
+                />
+
+                <label className="field-label" htmlFor="send-amount">Amount</label>
+                <div className="amount-row">
+                  <input
+                    id="send-amount"
+                    type="number"
+                    min="0"
+                    inputMode="decimal"
+                    value={sendAmount}
+                    placeholder="0.00000"
+                    onChange={(event) => setSendAmount(event.target.value)}
+                  />
+                  <button type="button" onClick={() => setSendAmount(String(selectedTransferAsset.available))}>Max</button>
+                </div>
+
+                <div className="transfer-summary">
+                  <div>
+                    <span>Available</span>
+                    <strong>{selectedTransferAsset.available.toFixed(5)} {selectedTransferAsset.ticker}</strong>
+                  </div>
+                  <div>
+                    <span>Network fee</span>
+                    <strong>{selectedTransferAsset.fee}</strong>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <strong>{selectedTransferAsset.locked ? 'Locked' : selectedTransferAsset.available > 0 ? 'Ready' : 'No available balance'}</strong>
+                  </div>
+                </div>
+
+                <div className="transfer-warning">{transferWarning}</div>
+                <button className="primary-transfer-button" type="button" disabled={!canSend}>Review Send</button>
+              </div>
+            ) : (
+              <div className="receive-panel">
+                <span className="field-label">Receive address</span>
+                <div className="qr-placeholder">
+                  <span>{selectedTransferAsset.ticker}</span>
+                </div>
+                <div className="receive-address">{selectedTransferAsset.address}</div>
+                <div className="transfer-summary">
+                  <div>
+                    <span>Network</span>
+                    <strong>{selectedTransferAsset.network}</strong>
+                  </div>
+                  <div>
+                    <span>Token type</span>
+                    <strong>{selectedTransferAsset.ticker}</strong>
+                  </div>
+                </div>
+                <button className="primary-transfer-button" type="button">Copy Address</button>
+              </div>
+            )}
+          </section>
+
+          {bottomNav}
+        </section>
+      </main>
+    );
+  }
 
   if (view === 'wallet') {
     const filteredWalletAssets = walletAssets.filter((asset) => {
