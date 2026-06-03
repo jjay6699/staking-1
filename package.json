@@ -13,6 +13,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "cryptocurrency-icons": "^0.18.1",
     "lucide-react": "^0.468.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "typescript": "^5.8.3",

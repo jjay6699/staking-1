@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -267,17 +268,6 @@ function App() {
   );
 
   const selectedTransferAsset = walletAssets.find((asset) => asset.ticker === selectedTransferTicker) ?? walletAssets[0];
-  const qrCells = Array.from({ length: 121 }, (_, index) => {
-    const code = selectedTransferAsset.address.charCodeAt(index % selectedTransferAsset.address.length);
-    const row = Math.floor(index / 11);
-    const col = index % 11;
-    const isFinder =
-      (row < 3 && col < 3) ||
-      (row < 3 && col > 7) ||
-      (row > 7 && col < 3);
-
-    return isFinder || ((code + index + row * 3 + col * 5) % 4 !== 0);
-  });
 
   if (view === 'transfer') {
     const canSend = selectedTransferAsset.available > 0 && Number(sendAmount) > 0 && recipientAddress.trim().length > 0;
@@ -340,6 +330,12 @@ function App() {
                   <strong>{selectedTransferAsset.name}</strong>
                   <em>{selectedTransferAsset.ticker}</em>
                 </span>
+                {selectedTransferAsset.locked && (
+                  <span className="token-lock">
+                    <LockKeyhole size={12} />
+                    Locked
+                  </span>
+                )}
                 <ChevronDown size={18} />
               </button>
 
@@ -367,22 +363,6 @@ function App() {
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-
-            <div className="selected-token-row">
-              <span className="asset-icon">
-                <img src={selectedTransferAsset.icon} alt={`${selectedTransferAsset.name} logo`} />
-              </span>
-              <div>
-                <strong>{selectedTransferAsset.name}</strong>
-                <span>{selectedTransferAsset.network}</span>
-              </div>
-              {selectedTransferAsset.locked && (
-                <span className="pill locked">
-                  <LockKeyhole size={13} />
-                  Locked
-                </span>
               )}
             </div>
 
@@ -433,12 +413,17 @@ function App() {
               <div className="receive-panel">
                 <span className="field-label">Receive address</span>
                 <div className="qr-placeholder">
-                  <div className="qr-grid" aria-hidden="true">
-                    {qrCells.map((filled, index) => (
-                      <span className={filled ? 'filled' : ''} key={index} />
-                    ))}
-                  </div>
-                  <strong>{selectedTransferAsset.ticker}</strong>
+                  <QRCodeSVG
+                    value={selectedTransferAsset.address}
+                    size={156}
+                    bgColor="#ffffff"
+                    fgColor="#111111"
+                    level="M"
+                    includeMargin
+                  />
+                  <span className="qr-token-badge">
+                    <img src={selectedTransferAsset.icon} alt="" />
+                  </span>
                 </div>
                 <div className="receive-address">{selectedTransferAsset.address}</div>
                 <div className="transfer-summary">
