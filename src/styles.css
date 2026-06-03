@@ -1044,7 +1044,6 @@ button {
   font-weight: 600;
 }
 
-.token-select,
 .send-form input {
   width: 100%;
   min-height: 46px;
@@ -1057,8 +1056,99 @@ button {
   font-size: 14px;
 }
 
-.token-select {
+.token-picker {
+  position: relative;
   margin-bottom: 12px;
+}
+
+.token-picker-button {
+  width: 100%;
+  min-height: 56px;
+  display: grid;
+  grid-template-columns: 36px 1fr 22px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 10px;
+  border-radius: 8px;
+  color: #f7f7f8;
+  background: #17181e;
+  text-align: left;
+  cursor: pointer;
+}
+
+.token-picker-button > span:nth-child(2),
+.token-picker-menu button > span:nth-child(2) {
+  min-width: 0;
+}
+
+.token-picker-button strong,
+.token-picker-button em,
+.token-picker-menu strong,
+.token-picker-menu em {
+  display: block;
+}
+
+.token-picker-button strong,
+.token-picker-menu strong {
+  overflow: hidden;
+  color: #f7f7f8;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-picker-button em,
+.token-picker-menu em {
+  margin-top: 3px;
+  color: #8b8e9b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.token-picker-button svg {
+  justify-self: end;
+  color: #8b8e9b;
+  transition: transform 160ms ease;
+}
+
+.token-picker-button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.token-picker-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  overflow: hidden;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: #17181e;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
+}
+
+.token-picker-menu button {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 9px;
+  border-radius: 7px;
+  color: #f7f7f8;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.token-picker-menu button.selected,
+.token-picker-menu button:hover {
+  background: rgba(241, 212, 10, 0.12);
 }
 
 .selected-token-row {
@@ -1184,14 +1274,29 @@ button {
   border: 10px solid #f7f7f8;
   border-radius: 8px;
   color: #120d03;
-  background:
-    linear-gradient(90deg, #111 8px, transparent 8px 18px, #111 18px 26px, transparent 26px),
-    linear-gradient(#111 8px, transparent 8px 18px, #111 18px 26px, transparent 26px),
-    #fff;
-  background-size: 34px 34px;
+  background: #fff;
 }
 
-.qr-placeholder span {
+.qr-grid {
+  width: 118px;
+  height: 118px;
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  grid-template-rows: repeat(11, 1fr);
+  gap: 3px;
+}
+
+.qr-grid span {
+  border-radius: 1px;
+  background: transparent;
+}
+
+.qr-grid span.filled {
+  background: #111;
+}
+
+.qr-placeholder strong {
+  position: absolute;
   display: grid;
   place-items: center;
   width: 54px;
@@ -1200,7 +1305,7 @@ button {
   color: #111;
   background: #f1d40a;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .receive-address {

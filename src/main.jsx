@@ -152,6 +152,7 @@ function App() {
   const [walletFilter, setWalletFilter] = useState('assets');
   const [transferMode, setTransferMode] = useState('send');
   const [selectedTransferTicker, setSelectedTransferTicker] = useState('BTC');
+  const [tokenPickerOpen, setTokenPickerOpen] = useState(false);
   const [sendAmount, setSendAmount] = useState('');
   const [recipientAddress, setRecipientAddress] = useState('');
   const [withdrawNotice, setWithdrawNotice] = useState('');
@@ -222,6 +223,7 @@ function App() {
 
   function goTo(nextView) {
     setExpandedTicker('');
+    setTokenPickerOpen(false);
     setWithdrawNotice('');
     setView(nextView);
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
@@ -265,6 +267,17 @@ function App() {
   );
 
   const selectedTransferAsset = walletAssets.find((asset) => asset.ticker === selectedTransferTicker) ?? walletAssets[0];
+  const qrCells = Array.from({ length: 121 }, (_, index) => {
+    const code = selectedTransferAsset.address.charCodeAt(index % selectedTransferAsset.address.length);
+    const row = Math.floor(index / 11);
+    const col = index % 11;
+    const isFinder =
+      (row < 3 && col < 3) ||
+      (row < 3 && col > 7) ||
+      (row > 7 && col < 3);
+
+    return isFinder || ((code + index + row * 3 + col * 5) % 4 !== 0);
+  });
 
   if (view === 'transfer') {
     const canSend = selectedTransferAsset.available > 0 && Number(sendAmount) > 0 && recipientAddress.trim().length > 0;
@@ -290,25 +303,72 @@ function App() {
 
           <section className="transfer-screen-card">
             <div className="transfer-tabs">
-              <button className={transferMode === 'send' ? 'selected' : ''} type="button" onClick={() => setTransferMode('send')}>Send</button>
-              <button className={transferMode === 'receive' ? 'selected' : ''} type="button" onClick={() => setTransferMode('receive')}>Receive</button>
+              <button
+                className={transferMode === 'send' ? 'selected' : ''}
+                type="button"
+                onClick={() => {
+                  setTokenPickerOpen(false);
+                  setTransferMode('send');
+                }}
+              >
+                Send
+              </button>
+              <button
+                className={transferMode === 'receive' ? 'selected' : ''}
+                type="button"
+                onClick={() => {
+                  setTokenPickerOpen(false);
+                  setTransferMode('receive');
+                }}
+              >
+                Receive
+              </button>
             </div>
 
-            <label className="field-label" htmlFor="token-select">Token</label>
-            <select
-              id="token-select"
-              className="token-select"
-              value={selectedTransferTicker}
-              onChange={(event) => {
-                setSelectedTransferTicker(event.target.value);
-                setSendAmount('');
-                setRecipientAddress('');
-              }}
-            >
-              {walletAssets.map((asset) => (
-                <option value={asset.ticker} key={asset.ticker}>{asset.name} ({asset.ticker})</option>
-              ))}
-            </select>
+            <span className="field-label">Token</span>
+            <div className="token-picker">
+              <button
+                className="token-picker-button"
+                type="button"
+                aria-expanded={tokenPickerOpen}
+                onClick={() => setTokenPickerOpen((open) => !open)}
+              >
+                <span className="asset-icon">
+                  <img src={selectedTransferAsset.icon} alt={`${selectedTransferAsset.name} logo`} />
+                </span>
+                <span>
+                  <strong>{selectedTransferAsset.name}</strong>
+                  <em>{selectedTransferAsset.ticker}</em>
+                </span>
+                <ChevronDown size={18} />
+              </button>
+
+              {tokenPickerOpen && (
+                <div className="token-picker-menu">
+                  {walletAssets.map((asset) => (
+                    <button
+                      className={asset.ticker === selectedTransferTicker ? 'selected' : ''}
+                      type="button"
+                      key={asset.ticker}
+                      onClick={() => {
+                        setSelectedTransferTicker(asset.ticker);
+                        setTokenPickerOpen(false);
+                        setSendAmount('');
+                        setRecipientAddress('');
+                      }}
+                    >
+                      <span className="asset-icon">
+                        <img src={asset.icon} alt={`${asset.name} logo`} />
+                      </span>
+                      <span>
+                        <strong>{asset.name}</strong>
+                        <em>{asset.ticker} · {asset.network}</em>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="selected-token-row">
               <span className="asset-icon">
@@ -373,7 +433,12 @@ function App() {
               <div className="receive-panel">
                 <span className="field-label">Receive address</span>
                 <div className="qr-placeholder">
-                  <span>{selectedTransferAsset.ticker}</span>
+                  <div className="qr-grid" aria-hidden="true">
+                    {qrCells.map((filled, index) => (
+                      <span className={filled ? 'filled' : ''} key={index} />
+                    ))}
+                  </div>
+                  <strong>{selectedTransferAsset.ticker}</strong>
                 </div>
                 <div className="receive-address">{selectedTransferAsset.address}</div>
                 <div className="transfer-summary">
