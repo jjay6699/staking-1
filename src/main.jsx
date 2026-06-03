@@ -493,6 +493,9 @@ function App() {
               <span>BTC/USD</span>
               <strong>{btcPrice ? formatUsd(btcPrice) : 'Loading'}</strong>
             </div>
+            <button className="wallet-withdraw-button" type="button" onClick={handleWithdraw}>
+              Withdraw
+            </button>
             {priceError && <div className="wallet-error">{priceError}</div>}
           </section>
 
@@ -527,6 +530,20 @@ function App() {
               );
             })}
           </section>
+
+          {withdrawNotice && (
+            <div className="notice-backdrop" role="presentation" onClick={() => setWithdrawNotice('')}>
+              <div className="notice-dialog" role="dialog" aria-modal="true" aria-label="Withdrawal status" onClick={(event) => event.stopPropagation()}>
+                <span className="pill locked">
+                  <LockKeyhole size={13} />
+                  Locked
+                </span>
+                <h2>Withdrawal unavailable</h2>
+                <p>{withdrawNotice}</p>
+                <button type="button" onClick={() => setWithdrawNotice('')}>Got it</button>
+              </div>
+            </div>
+          )}
 
           {bottomNav}
         </section>

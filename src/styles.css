@@ -883,6 +883,18 @@ button {
   flex: 0 0 auto;
 }
 
+.wallet-withdraw-button {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 12px;
+  border-radius: 8px;
+  color: #120d03;
+  background: #f1d40a;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .wallet-error {
   margin-top: 10px;
   color: #ff8d8d;
