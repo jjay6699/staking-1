@@ -5,12 +5,16 @@ import {
   ArrowLeft,
   ArrowUpRight,
   BarChart3,
+  Bell,
   ChevronDown,
   ChevronRight,
+  Download,
   Eye,
   Home,
   LockKeyhole,
+  Plus,
   Search,
+  Send,
   WalletCards,
   Coins,
   Clock3,
@@ -24,12 +28,20 @@ import stxIcon from 'cryptocurrency-icons/svg/color/stx.svg';
 import ethIcon from 'cryptocurrency-icons/svg/color/eth.svg';
 import solIcon from 'cryptocurrency-icons/svg/color/sol.svg';
 import usdtIcon from 'cryptocurrency-icons/svg/color/usdt.svg';
+import bnbIcon from 'cryptocurrency-icons/svg/color/bnb.svg';
+import xrpIcon from 'cryptocurrency-icons/svg/color/xrp.svg';
+import dogeIcon from 'cryptocurrency-icons/svg/color/doge.svg';
+import adaIcon from 'cryptocurrency-icons/svg/color/ada.svg';
+import avaxIcon from 'cryptocurrency-icons/svg/color/avax.svg';
+import linkIcon from 'cryptocurrency-icons/svg/color/link.svg';
+import dotIcon from 'cryptocurrency-icons/svg/color/dot.svg';
+import maticIcon from 'cryptocurrency-icons/svg/color/matic.svg';
 
 const staking = {
   btcBalance: 82.52331,
-  totalDays: 150,
-  initialElapsedDays: 18,
-  anchorDate: '2026-06-03T21:43:00+08:00',
+  totalDays: 365,
+  initialElapsedDays: 233,
+  anchorDate: '2026-06-04T00:32:47+08:00',
 };
 
 const primaryBtcRate = 3.25;
@@ -93,6 +105,20 @@ const walletAssets = [
   },
 ];
 
+const marketAssets = [
+  { name: 'Bitcoin', ticker: 'BTC', priceId: 'bitcoin', icon: btcIcon, balance: staking.btcBalance, fallbackPrice: 65759, change: 2.4 },
+  { name: 'Ethereum', ticker: 'ETH', priceId: 'ethereum', icon: ethIcon, balance: 0, fallbackPrice: 1822.95, change: 1.8 },
+  { name: 'Solana', ticker: 'SOL', priceId: 'solana', icon: solIcon, balance: 0, fallbackPrice: 72.46, change: 3.6 },
+  { name: 'BNB', ticker: 'BNB', priceId: 'binancecoin', icon: bnbIcon, balance: 0, fallbackPrice: 650.24, change: 0.9 },
+  { name: 'XRP', ticker: 'XRP', priceId: 'ripple', icon: xrpIcon, balance: 0, fallbackPrice: 0.52, change: -0.7 },
+  { name: 'Dogecoin', ticker: 'DOGE', priceId: 'dogecoin', icon: dogeIcon, balance: 0, fallbackPrice: 0.14, change: 1.1 },
+  { name: 'Cardano', ticker: 'ADA', priceId: 'cardano', icon: adaIcon, balance: 0, fallbackPrice: 0.62, change: -1.3 },
+  { name: 'Avalanche', ticker: 'AVAX', priceId: 'avalanche-2', icon: avaxIcon, balance: 0, fallbackPrice: 28.4, change: 2.0 },
+  { name: 'Chainlink', ticker: 'LINK', priceId: 'chainlink', icon: linkIcon, balance: 0, fallbackPrice: 15.2, change: 0.4 },
+  { name: 'Polkadot', ticker: 'DOT', priceId: 'polkadot', icon: dotIcon, balance: 0, fallbackPrice: 4.25, change: -0.5 },
+  { name: 'Polygon', ticker: 'MATIC', priceId: 'matic-network', icon: maticIcon, balance: 0, fallbackPrice: 0.23, change: 1.6 },
+];
+
 function formatBtc(value) {
   return value.toLocaleString('en-US', {
     minimumFractionDigits: 5,
@@ -116,6 +142,10 @@ function formatRate(rate) {
   return `${rate.toFixed(2)}%`;
 }
 
+function formatStakePeriod(days) {
+  return days === 365 ? '1 year' : `${days} days`;
+}
+
 function formatUnlockDate(timestamp) {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -128,15 +158,19 @@ function formatUnlockDate(timestamp) {
 
 function formatRemainingTime(milliseconds) {
   const totalMinutes = Math.max(0, Math.ceil(milliseconds / (60 * 1000)));
-  const days = Math.floor(totalMinutes / (24 * 60));
+  const days = Math.ceil(totalMinutes / (24 * 60));
   const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
   const minutes = totalMinutes % 60;
 
-  if (days <= 0 && hours <= 0) {
+  if (totalMinutes >= 24 * 60) {
+    return `${days} days`;
+  }
+
+  if (hours <= 0) {
     return `${minutes} min`;
   }
 
-  return `${days} days ${hours} hrs ${minutes} min`;
+  return `${hours} hrs ${minutes} min`;
 }
 
 function XIcon() {
@@ -153,7 +187,7 @@ function XIcon() {
 function App() {
   const [now, setNow] = useState(() => Date.now());
   const [expandedTicker, setExpandedTicker] = useState('');
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState('home');
   const [walletFilter, setWalletFilter] = useState('assets');
   const [walletSlideIndex, setWalletSlideIndex] = useState(0);
   const [transferMode, setTransferMode] = useState('send');
@@ -176,19 +210,18 @@ function App() {
 
     async function fetchCryptoPrices() {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tether&vs_currencies=usd');
+        const trackedPriceIds = [...new Set([...walletAssets, ...marketAssets].map((asset) => asset.priceId))].join(',');
+        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${trackedPriceIds}&vs_currencies=usd`);
 
         if (!response.ok) {
           throw new Error('Unable to load prices');
         }
 
         const data = await response.json();
-        const nextPrices = {
-          BTC: data?.bitcoin?.usd,
-          ETH: data?.ethereum?.usd,
-          SOL: data?.solana?.usd,
-          USDT: data?.tether?.usd,
-        };
+        const nextPrices = [...walletAssets, ...marketAssets].reduce((next, asset) => {
+          next[asset.ticker] = data?.[asset.priceId]?.usd;
+          return next;
+        }, {});
 
         if (!cancelled) {
           setPrices(nextPrices);
@@ -227,6 +260,21 @@ function App() {
   const unlockDate = formatUnlockDate(unlockTimestamp);
   const remainingLockTime = formatRemainingTime(remainingLockMs);
   const selectedWalletAsset = walletAssets[walletSlideIndex] ?? walletAssets[0];
+  function getDisplayPrice(ticker) {
+    const livePrice = prices[ticker];
+
+    if (typeof livePrice === 'number') {
+      return livePrice;
+    }
+
+    return marketAssets.find((asset) => asset.ticker === ticker)?.fallbackPrice;
+  }
+
+  const totalWalletUsdValue = walletAssets.reduce((total, asset) => {
+    const livePrice = getDisplayPrice(asset.ticker);
+
+    return total + (typeof livePrice === 'number' ? asset.balance * livePrice : 0);
+  }, 0);
 
   function goTo(nextView) {
     setExpandedTicker('');
@@ -251,7 +299,7 @@ function App() {
 
   const bottomNav = (
     <nav className="bottom-nav" aria-label="Primary">
-      <button type="button" onClick={() => goTo('dashboard')}>
+      <button className={view === 'home' ? 'active' : ''} type="button" onClick={() => goTo('home')}>
         <Home size={23} />
         <span>Home</span>
       </button>
@@ -274,6 +322,128 @@ function App() {
   );
 
   const selectedTransferAsset = walletAssets.find((asset) => asset.ticker === selectedTransferTicker) ?? walletAssets[0];
+
+  if (view === 'home') {
+    return (
+      <main className="page-shell">
+        <section className="phone" aria-label="Crypto app home">
+          <header className="home-header">
+            <div className="home-profile">
+              <img src="/profile-mightydylank.jpg" alt="MightyDylanK profile" />
+              <div>
+                <span>Welcome back</span>
+                <strong>MightyDylanK</strong>
+              </div>
+            </div>
+            <button className="icon-button" type="button" aria-label="Notifications">
+              <Bell size={20} />
+            </button>
+          </header>
+
+          <section className="home-portfolio-card">
+            <div className="portfolio-topline">
+              <span>Total Balance</span>
+              <Eye size={15} />
+            </div>
+            <div className="portfolio-value">
+              {totalWalletUsdValue > 0 ? formatUsd(totalWalletUsdValue) : `${formatBtc(staking.btcBalance)} BTC`}
+            </div>
+            <div className="portfolio-btc-line">
+              <span>{formatBtc(staking.btcBalance)} BTC locked</span>
+              <strong>{formatRate(primaryBtcRate)} APY</strong>
+            </div>
+            <div className="home-progress">
+              <div>
+                <span>1-year staking plan</span>
+                <strong>{remainingDays} days left</strong>
+              </div>
+              <div className="progress-track">
+                <div style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+          </section>
+
+          <section className="quick-actions" aria-label="Quick actions">
+            <button
+              type="button"
+              onClick={() => {
+                setTransferMode('send');
+                goTo('transfer');
+              }}
+            >
+              <Send size={20} />
+              <span>Send</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTransferMode('receive');
+                goTo('transfer');
+              }}
+            >
+              <Download size={20} />
+              <span>Receive</span>
+            </button>
+            <button type="button" onClick={() => goTo('wallet')}>
+              <WalletCards size={20} />
+              <span>Wallet</span>
+            </button>
+            <button type="button" onClick={() => goTo('dashboard')}>
+              <Plus size={20} />
+              <span>Stake</span>
+            </button>
+          </section>
+
+          <section className="home-section">
+            <div className="home-section-title">
+              <span>Markets</span>
+              <button type="button">View All</button>
+            </div>
+            {marketAssets.map((asset) => {
+              const displayPrice = getDisplayPrice(asset.ticker);
+
+              return (
+                <article className="market-row" key={asset.ticker}>
+                  <span className="asset-icon">
+                    <img src={asset.icon} alt={`${asset.name} logo`} />
+                  </span>
+                  <div className="market-name">
+                    <strong>{asset.name}</strong>
+                    <span>{asset.ticker}</span>
+                  </div>
+                  <div className="market-value">
+                    <strong>{typeof displayPrice === 'number' ? formatUsd(displayPrice) : 'Loading'}</strong>
+                    <span>
+                      {asset.balance > 0
+                        ? `${asset.ticker === 'BTC' ? formatBtc(asset.balance) : asset.balance.toFixed(5)} ${asset.ticker}`
+                        : 'No balance'}
+                    </span>
+                    <em className={asset.change >= 0 ? 'market-change positive' : 'market-change negative'}>
+                      {asset.change >= 0 ? '+' : ''}{asset.change.toFixed(1)}%
+                    </em>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+
+          <button className="home-staking-card" type="button" onClick={() => goTo('details')}>
+            <div>
+              <span className="pill locked">
+                <LockKeyhole size={13} />
+                Active Stake
+              </span>
+              <h2>{formatBtc(totalProjectedRewards)} BTC projected reward</h2>
+              <p>{formatBtc(earnedRewards)} BTC earned so far from the 1-year BTC plan.</p>
+            </div>
+            <ChevronRight size={22} />
+          </button>
+
+          {bottomNav}
+        </section>
+      </main>
+    );
+  }
 
   if (view === 'transfer') {
     const canSend = selectedTransferAsset.available > 0 && Number(sendAmount) > 0 && recipientAddress.trim().length > 0;
@@ -676,7 +846,7 @@ function App() {
             <div className="lock-timeline">
               <div>
                 <span>Total period</span>
-                <strong>{staking.totalDays} days</strong>
+                <strong>{formatStakePeriod(staking.totalDays)}</strong>
               </div>
               <div>
                 <span>Already staked</span>
@@ -741,7 +911,7 @@ function App() {
           <div className="metric-grid">
             <div>
               <p>Total Period</p>
-              <strong>{staking.totalDays} days</strong>
+              <strong>{formatStakePeriod(staking.totalDays)}</strong>
             </div>
             <div>
               <p>Already Staked</p>
@@ -773,15 +943,15 @@ function App() {
           <div className="reward-stat primary">
             <Coins size={20} />
             <div>
-              <p>Estimated Rewards Left</p>
-              <strong>{formatBtc(estimatedBtcRewards)} BTC</strong>
+              <p>Total 1-Year Rewards</p>
+              <strong>{formatBtc(totalProjectedRewards)} BTC</strong>
             </div>
           </div>
 
           <div className="small-stats">
             <div>
               <Clock3 size={18} />
-              <span>{formatBtc(dailyBtcReward)} BTC/day</span>
+              <span>{formatBtc(estimatedBtcRewards)} BTC left</span>
             </div>
             <div>
               <TrendingUp size={18} />
@@ -853,8 +1023,8 @@ function App() {
         <section className="action-panel">
           <div>
             <span className="pill muted">Start Staking</span>
-            <h2>BTC locked until day 150</h2>
-            <p>Day {elapsedDays} complete. Remaining period tracks the locked balance automatically.</p>
+            <h2>BTC locked for 1 year</h2>
+            <p>Day {elapsedDays} complete. {remainingDays} days remain on the locked balance.</p>
           </div>
           <ShieldCheck size={36} />
         </section>

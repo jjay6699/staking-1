@@ -61,6 +61,261 @@ button {
   background: #222431;
 }
 
+.home-header,
+.home-profile,
+.portfolio-topline,
+.portfolio-btc-line,
+.home-progress div,
+.home-section-title,
+.market-row,
+.home-staking-card {
+  display: flex;
+  align-items: center;
+}
+
+.home-header {
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 7px 16px;
+}
+
+.home-profile {
+  gap: 11px;
+  min-width: 0;
+}
+
+.home-profile img {
+  width: 48px;
+  height: 48px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.home-profile span,
+.portfolio-topline,
+.portfolio-btc-line span,
+.home-progress span,
+.home-section-title button,
+.market-name span,
+.market-value span,
+.home-staking-card p {
+  color: #8b8e9b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.home-profile strong {
+  display: block;
+  margin-top: 3px;
+  color: #f7f7f8;
+  font-size: 20px;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.home-portfolio-card,
+.quick-actions,
+.home-section,
+.home-staking-card {
+  position: relative;
+  z-index: 1;
+  border-radius: 8px;
+  background: #101116;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.home-portfolio-card {
+  padding: 17px;
+  margin-bottom: 10px;
+}
+
+.portfolio-topline,
+.portfolio-btc-line,
+.home-progress div,
+.home-section-title,
+.home-staking-card {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.portfolio-topline svg {
+  color: #8b8e9b;
+}
+
+.portfolio-value {
+  margin-top: 7px;
+  color: #f7f7f8;
+  font-size: clamp(31px, 8vw, 40px);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.portfolio-btc-line {
+  min-height: 38px;
+  margin-top: 14px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #17181e;
+}
+
+.portfolio-btc-line strong,
+.home-progress strong {
+  color: #36d895;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.home-progress {
+  margin-top: 14px;
+}
+
+.home-progress .progress-track {
+  margin-top: 8px;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.quick-actions button {
+  min-width: 0;
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  padding: 10px 4px;
+  border-radius: 8px;
+  color: #f7f7f8;
+  background: #17181e;
+  cursor: pointer;
+}
+
+.quick-actions svg {
+  color: #f1d40a;
+}
+
+.quick-actions span {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.home-section {
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.home-section-title {
+  margin-bottom: 10px;
+}
+
+.home-section-title span {
+  color: #f7f7f8;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.home-section-title button {
+  padding: 0;
+  color: #f1d40a;
+  background: transparent;
+  cursor: pointer;
+}
+
+.market-row {
+  min-height: 68px;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.market-row:last-child {
+  border-bottom: 0;
+}
+
+.market-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.market-name strong,
+.market-name span,
+.market-value strong,
+.market-value span,
+.market-value em {
+  display: block;
+}
+
+.market-name strong {
+  overflow: hidden;
+  color: #f1f1f5;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-value {
+  flex: 0 0 132px;
+  text-align: right;
+}
+
+.market-value strong {
+  color: #f7f7f8;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.market-change {
+  margin-top: 4px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.market-change.positive {
+  color: #36d895;
+}
+
+.market-change.negative {
+  color: #ff8d8d;
+}
+
+.home-staking-card {
+  width: 100%;
+  min-height: 122px;
+  padding: 17px;
+  margin-bottom: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-staking-card h2 {
+  margin: 12px 0 5px;
+  color: #f7f7f8;
+  font-size: 18px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.home-staking-card p {
+  max-width: 330px;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.home-staking-card > svg {
+  color: #737681;
+  flex: 0 0 auto;
+}
+
 .balance-card,
 .rewards-card,
 .staking-list,
