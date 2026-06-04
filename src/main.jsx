@@ -13,6 +13,8 @@ import {
   Home,
   LockKeyhole,
   Plus,
+  RefreshCw,
+  Repeat2,
   Search,
   Send,
   WalletCards,
@@ -20,6 +22,7 @@ import {
   Clock3,
   ShieldCheck,
   TrendingUp,
+  X,
 } from 'lucide-react';
 import './styles.css';
 import btcIcon from 'cryptocurrency-icons/svg/color/btc.svg';
@@ -198,6 +201,13 @@ function App() {
   const [withdrawNotice, setWithdrawNotice] = useState('');
   const [prices, setPrices] = useState({});
   const [priceError, setPriceError] = useState('');
+  const [pricesUpdatedAt, setPricesUpdatedAt] = useState(null);
+  const [pricesLoading, setPricesLoading] = useState(false);
+  const [tradeFromTicker, setTradeFromTicker] = useState('BTC');
+  const [tradeToTicker, setTradeToTicker] = useState('ETH');
+  const [tradeAmount, setTradeAmount] = useState('0.25');
+  const [tradePickerOpen, setTradePickerOpen] = useState('');
+  const [swapPreviewOpen, setSwapPreviewOpen] = useState(false);
 
   React.useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60 * 1000);
@@ -209,6 +219,7 @@ function App() {
     let cancelled = false;
 
     async function fetchCryptoPrices() {
+      setPricesLoading(true);
       try {
         const trackedPriceIds = [...new Set([...walletAssets, ...marketAssets].map((asset) => asset.priceId))].join(',');
         const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${trackedPriceIds}&vs_currencies=usd`);
@@ -226,20 +237,27 @@ function App() {
         if (!cancelled) {
           setPrices(nextPrices);
           setPriceError('');
+          setPricesUpdatedAt(Date.now());
         }
       } catch (error) {
         if (!cancelled) {
           setPriceError('Live prices are temporarily unavailable.');
+        }
+      } finally {
+        if (!cancelled) {
+          setPricesLoading(false);
         }
       }
     }
 
     fetchCryptoPrices();
     const priceTimer = window.setInterval(fetchCryptoPrices, 5 * 60 * 1000);
+    window.refreshCryptoPrices = fetchCryptoPrices;
 
     return () => {
       cancelled = true;
       window.clearInterval(priceTimer);
+      delete window.refreshCryptoPrices;
     };
   }, []);
 
@@ -270,6 +288,33 @@ function App() {
     return marketAssets.find((asset) => asset.ticker === ticker)?.fallbackPrice;
   }
 
+  function getTradeAsset(ticker) {
+    return marketAssets.find((asset) => asset.ticker === ticker) ?? marketAssets[0];
+  }
+
+  function formatTokenAmount(value) {
+    if (!Number.isFinite(value)) {
+      return '0.000000';
+    }
+
+    return value.toLocaleString('en-US', {
+      minimumFractionDigits: value >= 1 ? 4 : 6,
+      maximumFractionDigits: value >= 1 ? 4 : 8,
+    });
+  }
+
+  function formatUpdatedTime(timestamp) {
+    if (!timestamp) {
+      return 'Syncing';
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(new Date(timestamp));
+  }
+
   const totalWalletUsdValue = walletAssets.reduce((total, asset) => {
     const livePrice = getDisplayPrice(asset.ticker);
 
@@ -279,6 +324,8 @@ function App() {
   function goTo(nextView) {
     setExpandedTicker('');
     setTokenPickerOpen(false);
+    setTradePickerOpen('');
+    setSwapPreviewOpen(false);
     setWithdrawNotice('');
     setView(nextView);
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
@@ -297,13 +344,82 @@ function App() {
     setWithdrawNotice('This stake has completed its lock period and is available to withdraw.');
   }
 
+  function handleTradeTokenChange(side, ticker) {
+    setTradePickerOpen('');
+
+    if (side === 'from') {
+      setTradeFromTicker(ticker);
+
+      if (ticker === tradeToTicker) {
+        const replacement = marketAssets.find((asset) => asset.ticker !== ticker)?.ticker ?? 'ETH';
+        setTradeToTicker(replacement);
+      }
+      return;
+    }
+
+    setTradeToTicker(ticker);
+
+    if (ticker === tradeFromTicker) {
+      const replacement = marketAssets.find((asset) => asset.ticker !== ticker)?.ticker ?? 'BTC';
+      setTradeFromTicker(replacement);
+    }
+  }
+
+  function flipTradePair() {
+    setTradePickerOpen('');
+    setSwapPreviewOpen(false);
+    setTradeFromTicker(tradeToTicker);
+    setTradeToTicker(tradeFromTicker);
+  }
+
+  function renderTradeTokenPicker(side, selectedAsset) {
+    const selectedTicker = side === 'from' ? tradeFromTicker : tradeToTicker;
+    const label = side === 'from' ? 'Token to pay' : 'Token to receive';
+    const isOpen = tradePickerOpen === side;
+
+    return (
+      <div className="trade-token-picker">
+        <button
+          className="trade-token-button"
+          type="button"
+          aria-label={label}
+          aria-expanded={isOpen}
+          onClick={() => setTradePickerOpen((openSide) => (openSide === side ? '' : side))}
+        >
+          <img src={selectedAsset.icon} alt="" />
+          <span>{selectedAsset.ticker}</span>
+          <ChevronDown size={15} />
+        </button>
+
+        {isOpen && (
+          <div className="trade-token-menu">
+            {marketAssets.map((asset) => (
+              <button
+                className={asset.ticker === selectedTicker ? 'selected' : ''}
+                type="button"
+                key={asset.ticker}
+                onClick={() => handleTradeTokenChange(side, asset.ticker)}
+              >
+                <img src={asset.icon} alt="" />
+                <span>
+                  <strong>{asset.ticker}</strong>
+                  <em>{asset.name}</em>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const bottomNav = (
     <nav className="bottom-nav" aria-label="Primary">
       <button className={view === 'home' ? 'active' : ''} type="button" onClick={() => goTo('home')}>
         <Home size={23} />
         <span>Home</span>
       </button>
-      <button type="button">
+      <button className={view === 'trade' ? 'active' : ''} type="button" onClick={() => goTo('trade')}>
         <BarChart3 size={23} />
         <span>Trade</span>
       </button>
@@ -322,6 +438,20 @@ function App() {
   );
 
   const selectedTransferAsset = walletAssets.find((asset) => asset.ticker === selectedTransferTicker) ?? walletAssets[0];
+  const tradeFromAsset = getTradeAsset(tradeFromTicker);
+  const tradeToAsset = getTradeAsset(tradeToTicker);
+  const tradeFromPrice = getDisplayPrice(tradeFromTicker);
+  const tradeToPrice = getDisplayPrice(tradeToTicker);
+  const numericTradeAmount = Number(tradeAmount);
+  const hasLiveTradePrices = typeof prices[tradeFromTicker] === 'number' && typeof prices[tradeToTicker] === 'number';
+  const canQuoteTrade = Number.isFinite(numericTradeAmount) && numericTradeAmount > 0 && typeof tradeFromPrice === 'number' && typeof tradeToPrice === 'number';
+  const tradeSlippage = 0.005;
+  const networkFeeUsd = 3.8;
+  const grossTradeOutput = canQuoteTrade ? (numericTradeAmount * tradeFromPrice) / tradeToPrice : 0;
+  const estimatedTradeOutput = grossTradeOutput * (1 - tradeSlippage);
+  const minimumTradeOutput = grossTradeOutput * (1 - 0.01);
+  const tradeUsdValue = canQuoteTrade ? numericTradeAmount * tradeFromPrice : 0;
+  const tradeRate = typeof tradeFromPrice === 'number' && typeof tradeToPrice === 'number' ? tradeFromPrice / tradeToPrice : 0;
 
   if (view === 'home') {
     return (
@@ -397,7 +527,7 @@ function App() {
           <section className="home-section">
             <div className="home-section-title">
               <span>Markets</span>
-              <button type="button">View All</button>
+              <button type="button" onClick={() => goTo('trade')}>View All</button>
             </div>
             {marketAssets.map((asset) => {
               const displayPrice = getDisplayPrice(asset.ticker);
@@ -438,6 +568,206 @@ function App() {
             </div>
             <ChevronRight size={22} />
           </button>
+
+          {bottomNav}
+        </section>
+      </main>
+    );
+  }
+
+  if (view === 'trade') {
+    return (
+      <main className="page-shell">
+        <section className="phone" aria-label="Crypto swap trading">
+          <header className="trade-header">
+            <div>
+              <span>Trade</span>
+              <strong>Swap Crypto</strong>
+            </div>
+            <button
+              className="icon-button"
+              type="button"
+              aria-label="Refresh live rates"
+              onClick={() => window.refreshCryptoPrices?.()}
+              disabled={pricesLoading}
+            >
+              <RefreshCw size={20} className={pricesLoading ? 'spinning' : ''} />
+            </button>
+          </header>
+
+          <section className="trade-rate-card">
+            <div className="trade-rate-top">
+              <span className={hasLiveTradePrices ? 'pill success' : 'pill muted'}>
+                {hasLiveTradePrices ? 'Live rates' : 'Syncing rates'}
+              </span>
+              <span>Updated {formatUpdatedTime(pricesUpdatedAt)}</span>
+            </div>
+            <div className="trade-rate-main">
+              <span>1 {tradeFromTicker}</span>
+              <strong>
+                {tradeRate > 0 ? `${formatTokenAmount(tradeRate)} ${tradeToTicker}` : 'Loading'}
+              </strong>
+            </div>
+            {priceError && <div className="wallet-error">{priceError}</div>}
+          </section>
+
+          <section className="swap-card" aria-label="Swap form">
+            <div className="swap-field">
+              <div className="swap-field-label">
+                <span>You pay</span>
+                <strong>{typeof tradeFromPrice === 'number' ? formatUsd(tradeFromPrice) : 'Loading'}</strong>
+              </div>
+              <div className="swap-input-row">
+                <input
+                  aria-label="Amount to swap"
+                  type="number"
+                  min="0"
+                  inputMode="decimal"
+                  value={tradeAmount}
+                  onChange={(event) => setTradeAmount(event.target.value)}
+                />
+                {renderTradeTokenPicker('from', tradeFromAsset)}
+              </div>
+            </div>
+
+            <button className="pair-flip-button" type="button" aria-label="Flip swap pair" onClick={flipTradePair}>
+              <Repeat2 size={20} />
+            </button>
+
+            <div className="swap-field">
+              <div className="swap-field-label">
+                <span>You receive</span>
+                <strong>{typeof tradeToPrice === 'number' ? formatUsd(tradeToPrice) : 'Loading'}</strong>
+              </div>
+              <div className="swap-input-row">
+                <output aria-label="Estimated received amount">
+                  {canQuoteTrade ? formatTokenAmount(estimatedTradeOutput) : '0.000000'}
+                </output>
+                {renderTradeTokenPicker('to', tradeToAsset)}
+              </div>
+            </div>
+
+            <div className="trade-summary">
+              <div>
+                <span>Trade value</span>
+                <strong>{canQuoteTrade ? formatUsd(tradeUsdValue) : 'Loading'}</strong>
+              </div>
+              <div>
+                <span>Max slippage</span>
+                <strong>0.50%</strong>
+              </div>
+              <div>
+                <span>Minimum received</span>
+                <strong>{canQuoteTrade ? `${formatTokenAmount(minimumTradeOutput)} ${tradeToTicker}` : 'Loading'}</strong>
+              </div>
+              <div>
+                <span>Network estimate</span>
+                <strong>{formatUsd(networkFeeUsd)}</strong>
+              </div>
+            </div>
+
+            <button
+              className="primary-transfer-button"
+              type="button"
+              disabled={!hasLiveTradePrices || !canQuoteTrade}
+              onClick={() => setSwapPreviewOpen(true)}
+            >
+              Preview Swap
+            </button>
+          </section>
+
+          <section className="home-section">
+            <div className="home-section-title">
+              <span>Live Markets</span>
+              <button type="button" onClick={() => window.refreshCryptoPrices?.()}>Refresh</button>
+            </div>
+            {marketAssets.slice(0, 6).map((asset) => {
+              const displayPrice = getDisplayPrice(asset.ticker);
+
+              return (
+                <article className="market-row compact-market-row" key={asset.ticker}>
+                  <span className="asset-icon">
+                    <img src={asset.icon} alt={`${asset.name} logo`} />
+                  </span>
+                  <div className="market-name">
+                    <strong>{asset.name}</strong>
+                    <span>{asset.ticker}</span>
+                  </div>
+                  <div className="market-value">
+                    <strong>{typeof displayPrice === 'number' ? formatUsd(displayPrice) : 'Loading'}</strong>
+                    <em className={asset.change >= 0 ? 'market-change positive' : 'market-change negative'}>
+                      {asset.change >= 0 ? '+' : ''}{asset.change.toFixed(1)}%
+                    </em>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+
+          {swapPreviewOpen && (
+            <div className="notice-backdrop" role="presentation" onClick={() => setSwapPreviewOpen(false)}>
+              <div className="swap-preview-dialog" role="dialog" aria-modal="true" aria-label="Swap preview" onClick={(event) => event.stopPropagation()}>
+                <div className="swap-preview-top">
+                  <span className="pill success">Live quote</span>
+                  <button className="icon-button" type="button" aria-label="Close swap preview" onClick={() => setSwapPreviewOpen(false)}>
+                    <X size={19} />
+                  </button>
+                </div>
+
+                <h2>Preview Swap</h2>
+
+                <div className="swap-preview-route">
+                  <div>
+                    <span className="asset-icon">
+                      <img src={tradeFromAsset.icon} alt={`${tradeFromAsset.name} logo`} />
+                    </span>
+                    <strong>{formatTokenAmount(numericTradeAmount)} {tradeFromTicker}</strong>
+                    <em>{formatUsd(tradeUsdValue)}</em>
+                  </div>
+                  <span className="swap-preview-arrow">
+                    <Repeat2 size={19} />
+                  </span>
+                  <div>
+                    <span className="asset-icon">
+                      <img src={tradeToAsset.icon} alt={`${tradeToAsset.name} logo`} />
+                    </span>
+                    <strong>{formatTokenAmount(estimatedTradeOutput)} {tradeToTicker}</strong>
+                    <em>Estimated receive</em>
+                  </div>
+                </div>
+
+                <div className="swap-preview-details">
+                  <div>
+                    <span>Rate</span>
+                    <strong>1 {tradeFromTicker} = {formatTokenAmount(tradeRate)} {tradeToTicker}</strong>
+                  </div>
+                  <div>
+                    <span>Minimum received</span>
+                    <strong>{formatTokenAmount(minimumTradeOutput)} {tradeToTicker}</strong>
+                  </div>
+                  <div>
+                    <span>Slippage</span>
+                    <strong>0.50%</strong>
+                  </div>
+                  <div>
+                    <span>Network estimate</span>
+                    <strong>{formatUsd(networkFeeUsd)}</strong>
+                  </div>
+                  <div>
+                    <span>Quote updated</span>
+                    <strong>{formatUpdatedTime(pricesUpdatedAt)}</strong>
+                  </div>
+                </div>
+
+                <button className="confirm-swap-button" type="button">
+                  Confirm Swap
+                </button>
+                <button className="secondary-swap-button" type="button" onClick={() => setSwapPreviewOpen(false)}>
+                  Adjust Swap
+                </button>
+              </div>
+            </div>
+          )}
 
           {bottomNav}
         </section>
