@@ -89,7 +89,8 @@ button {
   height: 48px;
   display: block;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #02040a;
   border: 2px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1437,7 +1438,8 @@ button {
   height: 58px;
   display: block;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #02040a;
   border: 2px solid rgba(255, 255, 255, 0.08);
 }
 

@@ -459,7 +459,7 @@ function App() {
         <section className="phone" aria-label="Crypto app home">
           <header className="home-header">
             <div className="home-profile">
-              <img src="/profile-mightydylank.jpg" alt="MightyDylanK profile" />
+              <img src="/profile-concept87.svg" alt="Concept 87 profile" />
               <div>
                 <span>Welcome back</span>
                 <strong>MightyDylanK</strong>
@@ -970,7 +970,7 @@ function App() {
       <main className="page-shell">
         <section className="phone" aria-label="BTC wallet">
           <header className="wallet-profile">
-            <img src="/profile-mightydylank.jpg" alt="MightyDylanK profile" />
+            <img src="/profile-concept87.svg" alt="Concept 87 profile" />
             <div>
               <span>Wallet</span>
               <strong>MightyDylanK</strong>
