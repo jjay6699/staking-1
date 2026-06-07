@@ -462,7 +462,7 @@ function App() {
               <img src="/profile-concept87.svg" alt="Concept 87 profile" />
               <div>
                 <span>Welcome back</span>
-                <strong>MightyDylanK</strong>
+                <strong>Concept 87 LTD</strong>
               </div>
             </div>
             <button className="icon-button" type="button" aria-label="Notifications">
@@ -973,7 +973,7 @@ function App() {
             <img src="/profile-concept87.svg" alt="Concept 87 profile" />
             <div>
               <span>Wallet</span>
-              <strong>MightyDylanK</strong>
+              <strong>Concept 87 LTD</strong>
             </div>
             <a href="https://x.com/MightyDylanK" target="_blank" rel="noreferrer" aria-label="Open MightyDylanK on X">
               <XIcon />
